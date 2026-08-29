@@ -1,0 +1,33 @@
+[package]
+name = "tpb-bridge-core-fuzz"
+version = "0.0.0"
+publish = false
+edition = "2024"
+
+[package.metadata]
+cargo-fuzz = true
+
+[dependencies]
+libfuzzer-sys = "=0.4.13"
+tpb-bridge-core = { path = "../crates/bridge-core" }
+
+[[bin]]
+name = "endpoint"
+path = "fuzz_targets/endpoint.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "compatibility_manifest"
+path = "fuzz_targets/compatibility_manifest.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "planner"
+path = "fuzz_targets/planner.rs"
+test = false
+doc = false
+bench = false
