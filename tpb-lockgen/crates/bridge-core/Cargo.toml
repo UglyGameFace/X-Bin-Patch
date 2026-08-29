@@ -1,0 +1,17 @@
+[package]
+name = "tpb-bridge-core"
+version = "0.1.0"
+edition.workspace = true
+rust-version.workspace = true
+
+[lib]
+name = "tpb_bridge_core"
+path = "src/lib.rs"
+
+[dependencies]
+ed25519-dalek = "=3.0.0"
+serde = { version = "=1.0.229", features = ["derive"] }
+serde_json = "=1.0.151"
+
+[dev-dependencies]
+proptest = "=1.11.0"
