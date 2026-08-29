@@ -18,6 +18,10 @@ jobs:
           components: clippy, rustfmt
       - name: Install current stable with Clippy and rustfmt
         run: rustup toolchain install stable --profile minimal --component clippy,rustfmt
+      - name: Install nightly fuzz toolchain
+        run: rustup toolchain install nightly --profile minimal
+      - name: Install cargo-fuzz into isolated prefix
+        run: cargo +stable install cargo-fuzz --locked --root "$RUNNER_TEMP/tpb-cargo-fuzz"
       - name: Generate root and fuzz lockfiles with MSRV Cargo
         run: |
           cargo +1.85.0 generate-lockfile --manifest-path tpb-lockgen/Cargo.toml
@@ -51,10 +55,25 @@ jobs:
           path: tpb-rust-toolchains.tar.gz
           compression-level: 0
           retention-days: 1
+      - name: Pack nightly and cargo-fuzz
+        run: |
+          NIGHTLY_DIR="$(basename "$(rustc +nightly --print sysroot)")"
+          mkdir -p tpb-fuzz-tools
+          tar -C "$HOME/.rustup/toolchains" -czf tpb-fuzz-tools/nightly-toolchain.tar.gz "$NIGHTLY_DIR"
+          cp "$RUNNER_TEMP/tpb-cargo-fuzz/bin/cargo-fuzz" tpb-fuzz-tools/cargo-fuzz
+          chmod +x tpb-fuzz-tools/cargo-fuzz
+          "$RUNNER_TEMP/tpb-cargo-fuzz/bin/cargo-fuzz" --version
+      - name: Upload nightly fuzz tools
+        uses: actions/upload-artifact@v4
+        with:
+          name: tpb-fuzz-tools
+          path: tpb-fuzz-tools
+          compression-level: 0
+          retention-days: 1
       - name: Commit generated lockfiles
         run: |
           git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git config user.email "41898282+UglyGameFace@users.noreply.github.com"
           git add tpb-lockgen/Cargo.lock tpb-lockgen/fuzz/Cargo.lock
           if git diff --cached --quiet; then
             echo "Lockfiles already current"
