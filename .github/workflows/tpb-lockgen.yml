@@ -14,18 +14,22 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@1.85.0
+        with:
+          components: clippy, rustfmt
+      - name: Install current stable with Clippy and rustfmt
+        run: rustup toolchain install stable --profile minimal --component clippy,rustfmt
       - name: Generate root and fuzz lockfiles with MSRV Cargo
         run: |
-          cargo generate-lockfile --manifest-path tpb-lockgen/Cargo.toml
-          cargo generate-lockfile --manifest-path tpb-lockgen/fuzz/Cargo.toml
+          cargo +1.85.0 generate-lockfile --manifest-path tpb-lockgen/Cargo.toml
+          cargo +1.85.0 generate-lockfile --manifest-path tpb-lockgen/fuzz/Cargo.toml
       - name: Verify root dependency graph on Rust 1.85
-        run: cargo check --manifest-path tpb-lockgen/Cargo.toml --workspace --all-targets --locked
+        run: cargo +1.85.0 check --manifest-path tpb-lockgen/Cargo.toml --workspace --all-targets --locked
       - name: Verify fuzz lockfile resolves
-        run: cargo metadata --manifest-path tpb-lockgen/fuzz/Cargo.toml --locked --format-version 1 >/dev/null
+        run: cargo +1.85.0 metadata --manifest-path tpb-lockgen/fuzz/Cargo.toml --locked --format-version 1 >/dev/null
       - name: Vendor public dependencies for offline private-source validation
         run: |
-          cargo vendor --locked --manifest-path tpb-lockgen/Cargo.toml tpb-lockgen/vendor-root >/dev/null
-          cargo vendor --locked --manifest-path tpb-lockgen/fuzz/Cargo.toml tpb-lockgen/vendor-fuzz >/dev/null
+          cargo +1.85.0 vendor --locked --manifest-path tpb-lockgen/Cargo.toml tpb-lockgen/vendor-root >/dev/null
+          cargo +1.85.0 vendor --locked --manifest-path tpb-lockgen/fuzz/Cargo.toml tpb-lockgen/vendor-fuzz >/dev/null
       - name: Upload offline vendor bundle
         uses: actions/upload-artifact@v4
         with:
@@ -34,6 +38,17 @@ jobs:
             tpb-lockgen/vendor-root
             tpb-lockgen/vendor-fuzz
           compression-level: 6
+          retention-days: 1
+      - name: Pack Rust 1.85 and stable toolchains
+        run: |
+          tar -C "$HOME/.rustup/toolchains" -czf tpb-rust-toolchains.tar.gz \
+            1.85.0-x86_64-unknown-linux-gnu stable-x86_64-unknown-linux-gnu
+      - name: Upload offline Rust toolchains
+        uses: actions/upload-artifact@v4
+        with:
+          name: tpb-rust-toolchains
+          path: tpb-rust-toolchains.tar.gz
+          compression-level: 0
           retention-days: 1
       - name: Commit generated lockfiles
         run: |
