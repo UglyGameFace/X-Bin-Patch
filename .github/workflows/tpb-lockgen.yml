@@ -1,0 +1,35 @@
+name: TPB Lockfile Resolver
+
+on:
+  push:
+    branches:
+      - 'scratch/tpb-lockgen-20260828'
+
+permissions:
+  contents: write
+
+jobs:
+  resolve:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@1.85.0
+      - name: Generate root and fuzz lockfiles with MSRV Cargo
+        run: |
+          cargo generate-lockfile --manifest-path tpb-lockgen/Cargo.toml
+          cargo generate-lockfile --manifest-path tpb-lockgen/fuzz/Cargo.toml
+      - name: Verify root dependency graph on Rust 1.85
+        run: cargo check --manifest-path tpb-lockgen/Cargo.toml --workspace --all-targets --locked
+      - name: Verify fuzz lockfile resolves
+        run: cargo metadata --manifest-path tpb-lockgen/fuzz/Cargo.toml --locked --format-version 1 >/dev/null
+      - name: Commit generated lockfiles
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add tpb-lockgen/Cargo.lock tpb-lockgen/fuzz/Cargo.lock
+          if git diff --cached --quiet; then
+            echo "Lockfiles already current"
+          else
+            git commit -m "scratch: resolve TPB lockfiles [skip ci]"
+            git push origin HEAD:scratch/tpb-lockgen-20260828
+          fi
