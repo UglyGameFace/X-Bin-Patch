@@ -37,6 +37,7 @@ jobs:
           path: |
             tpb-lockgen/vendor-root
             tpb-lockgen/vendor-fuzz
+          include-hidden-files: true
           compression-level: 6
           retention-days: 1
       - name: Pack Rust 1.85 and stable toolchains
