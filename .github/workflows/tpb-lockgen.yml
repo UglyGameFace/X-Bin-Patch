@@ -22,6 +22,19 @@ jobs:
         run: cargo check --manifest-path tpb-lockgen/Cargo.toml --workspace --all-targets --locked
       - name: Verify fuzz lockfile resolves
         run: cargo metadata --manifest-path tpb-lockgen/fuzz/Cargo.toml --locked --format-version 1 >/dev/null
+      - name: Vendor public dependencies for offline private-source validation
+        run: |
+          cargo vendor --locked --manifest-path tpb-lockgen/Cargo.toml tpb-lockgen/vendor-root >/dev/null
+          cargo vendor --locked --manifest-path tpb-lockgen/fuzz/Cargo.toml tpb-lockgen/vendor-fuzz >/dev/null
+      - name: Upload offline vendor bundle
+        uses: actions/upload-artifact@v4
+        with:
+          name: tpb-offline-vendor
+          path: |
+            tpb-lockgen/vendor-root
+            tpb-lockgen/vendor-fuzz
+          compression-level: 6
+          retention-days: 1
       - name: Commit generated lockfiles
         run: |
           git config user.name "github-actions[bot]"
